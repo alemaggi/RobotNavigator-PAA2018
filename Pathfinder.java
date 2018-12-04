@@ -6,6 +6,14 @@ import java.util.LinkedHashSet;
 import org.unige.aims.GridWorld;
 import org.unige.aims.GridWorld.Coordinate;
 
+/**
+ * 
+ * @author alessandromaggi
+ *
+ *La classe Pathfinder mette a disposizione i metodi per permettere al robot di scegliere la migliore 
+ *cella nella quale muoversi (con un riferimento all' A*) e tornare indietro in caso non siano piu disponibili
+ *celle libere.
+ */
 public class Pathfinder {
 	
 	private GridWorld gw; //oggetto di tipo gridWorld
@@ -23,7 +31,10 @@ public class Pathfinder {
 		closedList.add(currentCell);
 	}
 	
-	//metodo per ottenere le celle libere adiacenti ad una cella 
+	/**
+	 * metodo per ottenere le celle libere adiacenti ad una cella nella quale si trova il robot
+	 * @return ArrayList di celle libere adiacenti
+	 */
 	public ArrayList<Cell> adjacentFreeCell() {
 		ArrayList<Cell> adjacentFreeCell = new ArrayList<Cell>(); //ArrayList per contenere le celle libere adiacenti
 		Iterable<Coordinate> adjacentFreeCoordinate; //iterable che contiene le celle adiacenti e libere
@@ -32,40 +43,44 @@ public class Pathfinder {
 		for (Coordinate c: adjacentFreeCoordinate) {
 			Cell c1 = new Cell(c, currentCell);
 			calculateHcost(c1);
-			calculateFcost(c1);
 			adjacentFreeCell.add(c1);
 		}
 		return adjacentFreeCell;
 	}
 	
-	//metodo per calcolare il costo H (in riferimento all' algoritmo A*) stimato con il metodo Manhattan
+	/**
+	 * metodo per calcolare il costo H (in riferimento all' algoritmo A*) stimato con il metodo Manhattan
+	 * @param cell
+	 */
 	public void calculateHcost(Cell cell) {
 		int hX = gridDimension - cell.getRow() - 1; //-1 perche la cella target è in girdDimension - 1;
 		int hY = gridDimension - cell.getCol() - 1;
 		cell.setHCost(hX + hY);
 	}
 	
-	//metodo per calcoare il costo F (in riferimento all' algoritmo A*) ottenuto come somma del costo H e del costo G
-	public void calculateFcost(Cell cell) {	
-		calculateHcost(cell);
-		cell.setFCost(cell.getGCost() + cell.getHCost());
-	}
-	
-	//metodo per trovare la cella con il minor costo F tra le celle libere adiacenti 
+	/**
+	 * @param adjacentFreeCell
+	 * @return la cella con il minor costo F
+	 */
 	public Cell findMinValue(ArrayList<Cell> adjacentFreeCell) {
 		Cell minCell = adjacentFreeCell.get(0);
-		int min = adjacentFreeCell.get(0).getFCost();
+		int min = adjacentFreeCell.get(0).getHCost();
 		
 		for (Cell c: adjacentFreeCell) {
-			if (c.getFCost() < min) {
-				min = c.getFCost();
+			if (c.getHCost() < min) {
+				min = c.getHCost();
 				minCell = c;
 			}
 		}
 		return minCell;
 	}
 	
-	//metodo per rimuovere le celle libere adiacenti che sono presenti nella closed list
+	/**
+	 * metodo per rimuovere le celle libere adiacenti che sono presenti nella closed list
+	 * 
+	 * @param cl <-- closedList (celle visitate)
+	 * @param fac <-- FreeAdjacentCell
+	 */
 	private void removeCells(HashSet<Cell> cl, ArrayList<Cell> fac) {
 		ArrayList<Cell> markedForDel = new ArrayList<Cell>(); //ArrayList contenete le celle che andranno cancellate
 		for (Cell oc : fac) {
@@ -79,18 +94,22 @@ public class Pathfinder {
 	    fac.removeAll(markedForDel);
 	}
 	
-	//metodo per far tornare indietro il robot di un passo quando esso non ha piu celle libere adiacenti (anche che non appartengano alla closedList)
+	/**
+	 * metodo per far tornare indietro il robot di un passo quando esso non ha piu celle 
+	 * libere adiacenti (anche che non appartengano alla closedList)
+	 */
 	private void getBack() {
 		Path p = new Path();
 		path.remove(currentCell);
 		gw.moveToAdjacentCell(p.moveCell(currentCell, currentCell.getPreviousCell()));
 		currentCell = currentCell.getPreviousCell();
-		if(canAddToClosedList(currentCell)) {
-			closedList.add(currentCell);
-		}
 	}
 	
-	//metodo per controllare che una cella non sia gia contenuta nella closedList e quindi che possa essere aggiunta in essa
+	/**
+	 * 
+	 * @param c <-- cella corrente
+	 * @return true in caso la cella c si possa aggiugere alla closedList
+	 */
 	private boolean canAddToClosedList(Cell c) {
 		for (Cell c1: closedList) {  	
 			if(c.getRow() == c1.getRow() && c.getCol() == c1.getCol()) {
@@ -100,12 +119,19 @@ public class Pathfinder {
 		return true;
 	}
 	
-	//metodo per far muovere il robot nella cella migliore secondo quanto detto e aggiungere la cella visitata in path
+	/**
+	 * metodo per far muovere il robot nella cella migliore secondo quanto detto e aggiungere la cella visitata in path 
+	 */
 	public void bestMove() {
 		Path p = new Path();
 		path.add(currentCell);
 		ArrayList<Cell> tmp = adjacentFreeCell();
 		removeCells(closedList, tmp);
+		//controllo sull' impossibilità di trovare un percorso
+		if ((currentCell.getRow() == 0 && currentCell.getCol() == 0) && tmp.size() == 0) {
+			System.out.println("Nessun percorso!");
+			System.exit(0);
+		}
 		if (tmp.size() != 0) {
 			gw.moveToAdjacentCell(p.moveCell(currentCell,findMinValue(tmp)));
 			currentCell = findMinValue(tmp);
@@ -118,12 +144,13 @@ public class Pathfinder {
 		
 	}
 	
-	//metodo di stampa del percorso finale del robot
-	public void printpath() throws InterruptedException {
-		System.out.println(path.size());
+	/**
+	 * metodo di stampa del percorso finale del robot
+	 * 
+	 */
+	public void printpath() {
 		for (Cell c : path) {
-			System.out.println("(" + c.getRow() + "," + c.getCol() + ")");
-
+			System.out.print("(" + c.getRow() + ", " + c.getCol() + ") ");
 		}
 	}	
 }
