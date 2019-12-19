@@ -29,7 +29,7 @@ public class Main {
 			while(!Gw.targetReached()) {
 				pf.bestMove();
 				}
-			pf.bestMove();
+			pf.finalMove();
 			pf.printpath();
 		}
 	}
