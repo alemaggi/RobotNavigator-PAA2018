@@ -105,6 +105,18 @@ public class Pathfinder {
 		currentCell = currentCell.getPreviousCell();
 	}
 	
+	public void finalMove() {
+		int targetRow = gridDimension - 1;
+		if(currentCell.getRow() == (targetRow - 1)) {
+			gw.moveToAdjacentCell(GridWorld.Direction.EAST);
+			path.add(currentCell);
+		}
+		else {
+			gw.moveToAdjacentCell(GridWorld.Direction.SOUTH);
+			path.add(currentCell);			
+		}
+	}
+	
 	/**
 	 * 
 	 * @param c <-- cella corrente
